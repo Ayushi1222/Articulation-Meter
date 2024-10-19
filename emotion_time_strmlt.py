@@ -98,6 +98,132 @@
 #         st.error("Please enter a valid YouTube video URL.")
 
 
+# import streamlit as st
+# import cv2
+# import numpy as np
+# import mediapipe as mp
+# import matplotlib.pyplot as plt
+# from tensorflow.keras.models import load_model
+# from tensorflow.keras.preprocessing.image import img_to_array
+# from moviepy.editor import VideoFileClip
+# from yt_dlp import YoutubeDL
+# import os
+# import time
+# from matplotlib.ticker import MaxNLocator
+
+# # Load pre-trained emotion detection model
+# emotion_model = load_model('D:\GitHub\Articulation-Meter\emotion_model.h5')
+# emotion_labels = ['Anger', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprised', 'Neutral']
+# emotion_emoji = ['😡', '🤢', '😱', '😊', '😢', '😲', '😐']
+
+# # Define emotion meter colors
+# emotion_color_map = {
+#     'Happy': 'green',  # Positive
+#     'Surprised': 'orange',  # Neutral/Surprise
+#     'Neutral': 'yellow',  # Neutral
+#     'Anger': 'red',  # Negative
+#     'Disgust': 'red',  # Negative
+#     'Fear': 'red',  # Negative
+#     'Sad': 'blue'  # Negative
+# }
+
+# # Initialize MediaPipe Pose
+# mp_pose = mp.solutions.pose
+# pose = mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.5, min_tracking_confidence=0.5)
+
+# # Function to process video
+# def process_video(video_url):
+#     ydl_opts = {
+#         'format': 'best',
+#         'outtmpl': 'downloaded_video.%(ext)s',
+#     }
+
+#     # Download the video
+#     with YoutubeDL(ydl_opts) as ydl:
+#         info_dict = ydl.extract_info(video_url, download=True)
+#         video_file = ydl.prepare_filename(info_dict)
+
+#     # Load the video using moviepy
+#     clip = VideoFileClip(video_file)
+
+#     # Open the video file using OpenCV
+#     cap = cv2.VideoCapture(video_file)
+
+#     # Initialize variables
+#     frame_count = 0
+#     emotions = []
+#     time_stamps = []
+
+#     # Process each frame
+#     while True:
+#         ret, frame = cap.read()
+#         if not ret:
+#             break
+        
+#         frame_count += 1
+#         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+#         frame_grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+#         faces = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml').detectMultiScale(frame_grey)
+
+#         # Detect emotions in the frame and append to the emotions list
+#         if faces is not None:
+#             for (x, y, w, h) in faces:
+#                 roi_gray = frame_grey[y:y+h, x:x+w]
+#                 roi_gray = cv2.resize(roi_gray, (48, 48))
+#                 image_pixels = img_to_array(roi_gray)
+#                 image_pixels = np.expand_dims(image_pixels, axis=0) / 255.0
+#                 predictions = emotion_model.predict(image_pixels)
+#                 max_index = np.argmax(predictions[0])
+#                 detected_emotion = emotion_labels[max_index]
+#                 emotions.append(detected_emotion)
+#                 time_stamps.append(frame_count / clip.fps)
+
+#         # Break loop after processing 10 seconds (fps * 10)
+#         if frame_count >= clip.fps * 10:
+#             break
+
+#     cap.release()
+#     return emotions, time_stamps
+
+# # Streamlit app
+# st.title("Emotion Detection from Video")
+
+# # Input for YouTube video URL
+# video_url = st.text_input("Enter YouTube Video URL:")
+
+# if st.button("Process Video"):
+#     if video_url:
+#         with st.spinner("Processing video..."):
+#             emotions, time_stamps = process_video(video_url)
+#             st.success("Video processed!")
+
+#             # Display results
+#             st.subheader("Detected Emotions (in 10-second intervals):")
+#             for idx, emotion in enumerate(emotions):
+#                 st.write(f"{emotion_emoji[emotion_labels.index(emotion)]} {emotion} detected at {round(time_stamps[idx], 2)} seconds")
+
+#             # Plot the emotions as a graph
+#             fig, ax = plt.subplots(figsize=(15, 5))
+#             ax.plot(time_stamps, emotions, marker='o', color='blue')
+#             ax.set_xticks(time_stamps)
+#             ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+#             plt.xticks(time_stamps, [f"{round(ts, 2)} sec" for ts in time_stamps])
+#             plt.ylabel('Emotions')
+#             plt.title('Detected Emotions Over Time')
+#             plt.grid(True)
+
+#             # Full-width layout for the plot
+#             st.pyplot(fig, clear_figure=True)
+
+#             # Create Emotion Meter
+#             st.subheader("Emotion Intensity Meter:")
+#             for idx, emotion in enumerate(emotions):
+#                 color = emotion_color_map[emotion]
+#                 st.markdown(f"<div style='background-color:{color};padding:10px;border-radius:10px;text-align:center'>{emotion_emoji[emotion_labels.index(emotion)]} {emotion} at {round(time_stamps[idx], 2)} seconds</div>", unsafe_allow_html=True)
+#     else:
+#         st.error("Please enter a valid YouTube video URL.")
+
+
 import streamlit as st
 import cv2
 import numpy as np
@@ -112,7 +238,7 @@ import time
 from matplotlib.ticker import MaxNLocator
 
 # Load pre-trained emotion detection model
-emotion_model = load_model('/home/rudra-gupta/Desktop/Articulation-Meter/-Articulation-Meter-/Project Files/emotion_model.h5')
+emotion_model = load_model('D:\GitHub\Articulation-Meter\emotion_model.h5')
 emotion_labels = ['Anger', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprised', 'Neutral']
 emotion_emoji = ['😡', '🤢', '😱', '😊', '😢', '😲', '😐']
 
@@ -198,9 +324,6 @@ if st.button("Process Video"):
             st.success("Video processed!")
 
             # Display results
-            st.subheader("Detected Emotions (in 10-second intervals):")
-            for idx, emotion in enumerate(emotions):
-                st.write(f"{emotion_emoji[emotion_labels.index(emotion)]} {emotion} detected at {round(time_stamps[idx], 2)} seconds")
 
             # Plot the emotions as a graph
             fig, ax = plt.subplots(figsize=(15, 5))
@@ -215,11 +338,25 @@ if st.button("Process Video"):
             # Full-width layout for the plot
             st.pyplot(fig, clear_figure=True)
 
-            # Create Emotion Meter
-            st.subheader("Emotion Intensity Meter:")
+            # Emotion Intensity Meter as a Bar Chart
+            st.subheader("Emotion Intensity Meter (Bar Graph):")
+            # Convert emotions to count how many times each emotion occurred
+            emotion_counts = {emotion: emotions.count(emotion) for emotion in set(emotions)}
+            colors = [emotion_color_map[emotion] for emotion in emotion_counts.keys()]
+
+            fig_bar, ax_bar = plt.subplots(figsize=(10, 5))
+            ax_bar.bar(emotion_counts.keys(), emotion_counts.values(), color=colors)
+            ax_bar.set_ylabel("Frequency")
+            ax_bar.set_xlabel("Emotions")
+            ax_bar.set_title("Emotion Frequency over 10 Seconds")
+            plt.grid(True)
+
+            # Show the bar chart in Streamlit
+            st.pyplot(fig_bar)
+
+            st.subheader("Detected Emotions (in 10-second intervals):")
             for idx, emotion in enumerate(emotions):
-                color = emotion_color_map[emotion]
-                st.markdown(f"<div style='background-color:{color};padding:10px;border-radius:10px;text-align:center'>{emotion_emoji[emotion_labels.index(emotion)]} {emotion} at {round(time_stamps[idx], 2)} seconds</div>", unsafe_allow_html=True)
+                st.write(f"{emotion_emoji[emotion_labels.index(emotion)]} {emotion} detected at {round(time_stamps[idx], 2)} seconds")
     else:
         st.error("Please enter a valid YouTube video URL.")
 
@@ -559,3 +696,8 @@ if st.button("Process Video"):
 #             st.success("Video processed!")
 #     else:
 #         st.error("Please enter a valid YouTube video URL.")
+
+
+# use this url https://youtu.be/0EykDvxJAyA?feature=shared
+
+# use this command streamlit run "D:\GitHub\Articulation-Meter\emotion_time_strmlt.py"
