@@ -196,7 +196,6 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 ## 🙏 Acknowledgements
 
 - The TED Talks organization for providing invaluable data
-- OpenAI for GPT models that aided in content analysis
 - The open-source community for the various libraries and tools used in this project
 
 <p align="center">Made with ❤️ by TECHAMID</p>
