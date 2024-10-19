@@ -191,8 +191,6 @@ We welcome contributions from the community! If you'd like to contribute, please
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
-
 ## 🙏 Acknowledgements
 
 - The TED Talks organization for providing invaluable data
