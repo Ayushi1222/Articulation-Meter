@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from concurrent.futures import ThreadPoolExecutor
 import time
+from streamlit_extras.switch_page_button import switch_page
+from streamlit_extras.colored_header import colored_header
 
 # Initialize MediaPipe Pose and Holistic
 mp_pose = mp.solutions.pose
@@ -171,8 +173,8 @@ def process_frame(frame, frame_index):
 
     # Hand Movement Graph
     if len(filtered_left_hand) > 0 and len(filtered_right_hand) > 0:
-        axes[0].plot(filtered_left_hand, color='red', linewidth=line_width, marker='o', markersize=1, label='Left hand movement')
-        axes[0].plot(filtered_right_hand, color='blue', linewidth=line_width, marker='o', markersize=1, label='Right hand movement')
+        axes[0].plot(filtered_left_hand, color='green', linewidth=line_width, marker='o', markersize=1, label='Left hand movement')
+        axes[0].plot(filtered_right_hand, color='yellow', linewidth=line_width, marker='o', markersize=1, label='Right hand movement')
     axes[0].set_ylim([min(min_left_hand, min_right_hand), max(max_left_hand, max_right_hand)])
     axes[0].set_xlim([0, frame_index])
     axes[0].axis('on')
@@ -181,7 +183,7 @@ def process_frame(frame, frame_index):
 
     # Shoulder Midpoints Graph
     if len(filtered_shoulder_midpoints) > 0:
-        axes[1].plot(filtered_shoulder_midpoints, color='green', linewidth=line_width, marker='o', markersize=1, label='Shoulder midpoint')
+        axes[1].plot(filtered_shoulder_midpoints, color='red', linewidth=line_width, marker='o', markersize=1, label='Shoulder midpoint')
     axes[1].set_ylim([min_shoulder_midpoint, max_shoulder_midpoint])
     axes[1].set_xlim([0, frame_index])
     axes[1].axis('on')
@@ -199,7 +201,7 @@ def process_frame(frame, frame_index):
 
     # Engagement Level Graph
     if len(filtered_engagement_level) > 0:
-        engagement_colors = {'attentive': 'green', 'interactive': 'blue', 'inspired': 'red'}
+        engagement_colors = {'attentive': 'red', 'interactive': 'yellow', 'inspired': 'green'}
         engagement_numeric = [1 if e == 'attentive' else 2 if e == 'interactive' else 3 for e in filtered_engagement_level]
         colors = [engagement_colors[e] for e in filtered_engagement_level]
         axes[3].scatter(range(len(filtered_engagement_level)), engagement_numeric, c=colors, s=5, label='Engagement level')
@@ -215,6 +217,58 @@ def process_frame(frame, frame_index):
 
     return frame, fig, engagement
 
+def get_engagement_feedback(engagement_level):
+    feedback = {
+        'attentive': {
+            'color': 'red',
+            'message': """
+            💡 Engagement Feedback: You seem attentive but could be more interactive!
+            
+            Tips to improve:
+            - Try using more hand gestures while speaking
+            - Vary your body posture occasionally
+            - Engage with head movements to emphasize points
+            - Consider incorporating more dynamic movements
+            """
+        },
+        'interactive': {
+            'color': 'yellow',
+            'message': """
+            🌟 Engagement Feedback: Great interaction level!
+            
+            Keep improving by:
+            - Adding more emphasis to key points with hand gestures
+            - Maintaining this energy level
+            - Try incorporating different gesture patterns
+            - Consider adding more facial expressions
+            """
+        },
+        'inspired': {
+            'color': 'green',
+            'message': """
+            ⭐ Engagement Feedback: Excellent articulation!
+            
+            To maintain this level:
+            - Keep up the dynamic movements
+            - Continue using varied gestures
+            - Your energy is perfect - maintain it!
+            - You're doing great with body language
+            """
+        }
+    }
+    return feedback[engagement_level]
+
+
+def reset_data():
+    """Reset all data lists and counters"""
+    global left_hand, right_hand, shoulder_midpoints, head_turn_angles, engagement_level
+    left_hand = []
+    right_hand = []
+    shoulder_midpoints = []
+    head_turn_angles = []
+    engagement_level = []
+
+
 def main():
     st.set_page_config(page_title="Hello Speaker!", layout="wide", initial_sidebar_state="collapsed")
     
@@ -225,7 +279,7 @@ def main():
             background: #f0f2f6;
         }
         .sidebar .sidebar-content {
-            background: #ffffff;
+            background: #000000;
         }
         h1, h2, h3 {
             color: #1f77b4;
@@ -234,35 +288,68 @@ def main():
             background-color: #1f77b4;
             color: white;
         }
+        .feedback-box {
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
         </style>
     """, unsafe_allow_html=True)
 
     st.title("Hello Speaker!")
 
-    # Create two columns
-    col1, col2 = st.columns(2)
+    # Create three columns
+    col1, col2, col3 = st.columns([2, 2, 1])
 
-    # Initialize placeholders for the video frame and graphs
+    # Initialize session state
+    if 'camera_running' not in st.session_state:
+        st.session_state.camera_running = True
+    if 'frame_index' not in st.session_state:
+        st.session_state.frame_index = 0
+
+    # Control buttons column
     with col1:
         st.header("Live Camera Feed")
         video_placeholder = st.empty()
+        
+        # Create a row for buttons
+        button_col1, button_col2 = st.columns(2)
+        
+        # Camera control button
+        with button_col1:
+            if st.button('Stop Camera' if st.session_state.camera_running else 'Start Camera'):
+                st.session_state.camera_running = not st.session_state.camera_running
+                if not st.session_state.camera_running:
+                    st.success("Camera stopped! Click again to restart.")
+                else:
+                    st.success("Camera started!")
+        
+        # Refresh button
+        with button_col2:
+            if st.button('Refresh Graphs'):
+                reset_data()
+                st.session_state.frame_index = 0
+                st.success("Graphs reset!")
 
     with col2:
         st.header("Engagement Analysis")
         graphs_placeholder = st.empty()
 
+    with col3:
+        st.header("Real-time Feedback")
+        feedback_placeholder = st.empty()
+
     # Create a ThreadPoolExecutor for processing frames
     with ThreadPoolExecutor(max_workers=2) as executor:
-        frame_index = 0
-        cap = cv2.VideoCapture(0)  # Assume we're using the default camera
+        cap = cv2.VideoCapture(0)
 
-        while True:
+        while st.session_state.camera_running:
             ret, frame = cap.read()
             if not ret:
                 break
 
             # Submit frame for processing
-            future = executor.submit(process_frame, frame, frame_index)
+            future = executor.submit(process_frame, frame, st.session_state.frame_index)
             frame, fig, engagement = future.result()
 
             # Display the frame
@@ -273,9 +360,22 @@ def main():
             # Display the graphs
             with col2:
                 graphs_placeholder.pyplot(fig)
+                plt.close(fig)  # Close the figure to free memory
+
+            # Display feedback
+            with col3:
+                feedback = get_engagement_feedback(engagement)
+                feedback_placeholder.markdown(
+                    f"""
+                    <div style="background-color: {feedback['color']}20; padding: 20px; border-radius: 10px; border: 2px solid {feedback['color']}">
+                    {feedback['message']}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
             # Update the Streamlit border color based on engagement level
-            border_color = {'attentive': 'green', 'interactive': 'blue', 'inspired': 'red'}[engagement]
+            border_color = {'attentive': 'red', 'interactive': 'yellow', 'inspired': 'green'}[engagement]
             st.markdown(
                 f"""
                 <style>
@@ -285,13 +385,30 @@ def main():
                 }}
                 </style>
                 """,
-                unsafe_allow_html=True,
+                unsafe_allow_html=True
             )
 
-            frame_index += 1
+            st.session_state.frame_index += 1
             time.sleep(0.1)  # Adjust this to control frame rate
 
         cap.release()
+
+        # Show summary when camera is stopped
+        if not st.session_state.camera_running:
+            st.markdown("### Session Summary")
+            if len(engagement_level) > 0:  # Only show summary if there's data
+                engagement_counts = {
+                    'attentive': engagement_level.count('attentive'),
+                    'interactive': engagement_level.count('interactive'),
+                    'inspired': engagement_level.count('inspired')
+                }
+                
+                total_frames = len(engagement_level)
+                st.write("Engagement Distribution:")
+                for level, count in engagement_counts.items():
+                    percentage = (count / total_frames) * 100
+                    st.progress(percentage / 100)
+                    st.write(f"{level.capitalize()}: {percentage:.1f}%")
 
 if __name__ == "__main__":
     main()
